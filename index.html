@@ -79,7 +79,7 @@
 
         .touch-buttons {
             position: absolute;
-            bottom: 15px;
+            bottom: 25px; /* 按键位置向下挪动10px */
             left: 0;
             width: 100%;
             display: flex;
@@ -111,13 +111,14 @@
             width: 95%;
             max-width: 480px;
             height: 320px;
-            background-color: #fff;
+            background-color: rgba(255, 255, 255, 0.8); /* 背景透明度改为80% */
             border: 2px solid #333;
             border-radius: 8px;
             padding: 15px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             overflow-y: auto;
             -webkit-overflow-scrolling: touch; /* 手机端平滑滚动 */
+            margin-top: 10px; /* 游戏介绍栏向下挪动10px */
         }
 
         .game-info-panel h2 {
@@ -194,7 +195,7 @@
             }
             
             .touch-buttons {
-                bottom: 20px;
+                bottom: 30px; /* 桌面端按键也同步向下挪动 */
                 padding: 0 20px;
             }
             
@@ -208,6 +209,7 @@
                 width: 300px;
                 height: 400px;
                 max-width: none;
+                margin-top: 0; /* 桌面端恢复原来的位置 */
             }
             
             .game-info-panel h2 {
@@ -247,6 +249,7 @@
         
         <div class="music-controls">
             <div class="music-btn" id="musicToggle">🔊</div>
+            <div class="music-btn" id="collisionToggle">🔲</div> <!-- 新增碰撞箱开关按钮 -->
         </div>
         
         <canvas id="gameCanvas" width="800" height="400"></canvas>
@@ -270,7 +273,7 @@
             <li><strong>↓</strong>：下蹲</li>
             <li><strong>P</strong>：暂停/继续游戏</li>
             <li><strong>R/点击屏幕</strong>：游戏结束后重新开始</li>
-            <li><strong>D</strong>：开/关碰撞箱显示</li>
+            <li><strong>D / 右上角按钮</strong>：开/关碰撞箱显示</li>
         </ul>
 
         <h3>🌤️ 天气演出</h3>
@@ -343,6 +346,7 @@
         });
 
         const musicToggle = document.getElementById('musicToggle');
+        const collisionToggle = document.getElementById('collisionToggle'); // 获取碰撞箱开关按钮
 
         function playCurrentMusic(){
             musicList.forEach(a => a.pause());
@@ -361,7 +365,14 @@
             }
         }
 
+        // 新增碰撞箱开关函数
+        function toggleCollisionBox() {
+            showCollisionBox = !showCollisionBox;
+            collisionToggle.textContent = showCollisionBox ? '🟥' : '🔲';
+        }
+
         musicToggle.addEventListener('click', toggleMusic);
+        collisionToggle.addEventListener('click', toggleCollisionBox); // 添加碰撞箱开关事件监听
 
         let weatherType = 0;
         const SWITCH_SCORE = 80;
@@ -945,7 +956,10 @@
             }
             if (e.code === 'KeyR' && gameOver) resetGame();
             if(e.code === 'KeyP' && !gameOver && gameStarted) isPaused = !isPaused;
-            if (e.code === 'KeyD') showCollisionBox = !showCollisionBox;
+            if (e.code === 'KeyD') {
+                showCollisionBox = !showCollisionBox;
+                collisionToggle.textContent = showCollisionBox ? '🟥' : '🔲'; // 同步按钮状态
+            }
         });
 
         document.addEventListener('keyup', (e) => {
