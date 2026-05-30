@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小鸡毛快跑 🐶</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation; /* 防止手机端双击缩放 */
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            background: #f5f5f5 url("body-bg.png") center/cover no-repeat;
+            font-family: Arial, sans-serif;
+            overflow-x: hidden;
+            overflow-y: auto;
+            gap: 15px;
+            padding: 15px 0;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: #8B4513;
+        }
+        
+        canvas {
+            border: 2px solid #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 100%;
+            height: auto;
+            touch-action: none; /* 防止canvas上的触摸事件被浏览器拦截 */
+        }
+
+        .music-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .music-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .music-btn:active {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .touch-buttons {
+            position: absolute;
+            bottom: 15px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 99;
+        }
+        .touch-btn {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            color: #fff;
+            font-size: 28px;
+            border: 2px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .touch-btn:active {
+            background: rgba(0,0,0,0.6);
+            transform: scale(0.95); /* 增加点击反馈 */
+        }
+
+        .game-info-panel {
+            width: 95%;
+            max-width: 480px;
+            height: 320px;
+            background-color: #fff;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* 手机端平滑滚动 */
+        }
+
+        .game-info-panel h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 6px;
+        }
+
+        .game-info-panel h3 {
+            font-size: 15px;
+            margin: 10px 0 6px;
+            color: #444;
+        }
+
+        .game-info-panel p, .game-info-panel ul {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .game-info-panel ul {
+            list-style-position: inside;
+            padding-left: 5px;
+        }
+
+        .corner-sign {
+            position: fixed;
+            bottom: 5px;
+            right: 8px;
+            color: rgba(128, 128, 128, 0.4);
+            font-size: 12px;
+            pointer-events: none;
+            user-select: none;
+            z-index: 5;
+        }
+
+        /* 桌面端适配 */
+        @media (min-width: 769px) {
+            body {
+                flex-direction: row;
+                justify-content: center;
+                overflow: hidden;
+                gap: 20px;
+                padding: 0;
+            }
+            
+            .game-container {
+                max-width: 800px;
+            }
+            
+            h1 {
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
+            
+            .touch-buttons {
+                bottom: 20px;
+                padding: 0 20px;
+            }
+            
+            .touch-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 26px;
+            }
+            
+            .game-info-panel {
+                width: 300px;
+                height: 400px;
+                max-width: none;
+            }
+            
+            .game-info-panel h2 {
+                font-size: 20px;
+                margin-bottom: 15px;
+                padding-bottom: 8px;
+            }
+            
+            .game-info-panel h3 {
+                font-size: 16px;
+                margin: 12px 0 8px;
+            }
+            
+            .game-info-panel p, .game-info-panel ul {
+                font-size: 14px;
+                line-height: 1.6;
+                margin-bottom: 8px;
+            }
+            
+            .corner-sign {
+                bottom: 8px;
+                right: 12px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>小鸡毛快跑</h1>
+        
+        <div class="music-controls">
+            <div class="music-btn" id="musicToggle">🔊</div>
+        </div>
+        
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+        <div class="touch-buttons">
+            <div class="touch-btn" id="btnJump">↑</div>
+            <div class="touch-btn" id="btnCrouch">↓</div>
+        </div>
+    </div>
+
+    <div class="game-info-panel">
+        <h2>📖 游戏介绍</h2>
+        
+        <h3>🎯 游戏目标</h3>
+        <p>小鸡毛跟小白在沙滩度假，不知从哪里来的坏蛋将小白抓走了！</p>
+        <p>操控小鸡毛，穿越重重障碍，把小白救回来吧！</p>
+
+        <h3>🎮 操作说明</h3>
+        <ul>
+            <li><strong>空格 / ↑</strong>：跳跃（两段跳）</li>
+            <li><strong>↓</strong>：下蹲</li>
+            <li><strong>P</strong>：暂停/继续游戏</li>
+            <li><strong>R/点击屏幕</strong>：游戏结束后重新开始</li>
+            <li><strong>D</strong>：开/关碰撞箱显示</li>
+        </ul>
+
+        <h3>🌤️ 天气演出</h3>
+        <p>每80分自动切换天气：晴天 / 下雨 / 迷雾</p>
+
+        <h3>⚠️ 障碍说明</h3>
+        <ul>
+            <li><strong>仙人掌</strong>：地面低级障碍</li>
+            <li><strong>飞鸟</strong>：空中低级障碍</li>
+            <li><strong>仙人掌丛</strong>：地面中级障碍，分数50分后出现</li>
+            <li><strong>巨型仙人掌</strong>：地面高级仙人掌，分数150分后出现</li>
+            <li><strong>地面坑洞</strong>：地面中级障碍，分数200分后出现(因为没做好人物与地面位置只要不下蹲碰到就不会死)</li>
+        </ul>
+    </div>
+
+     <div class="corner-sign">墨尘寂夜</div>
+
+    <audio id="bgMusic1">
+        <source src="bgm1.mp3" type="audio/mpeg">
+    
+    <audio id="bgMusic2">
+        <source src="bgm2.mp3" type="audio/mpeg">
+    
+    <audio id="bgMusic3">
+        <source src="bgm3.mp3" type="audio/mpeg">
+    
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const WIDTH = canvas.width;
+        const HEIGHT = canvas.height;
+
+        let gameOver = false;
+        let isPaused = false;
+        let score = 0;
+        let highScore = localStorage.getItem('chickenHighScore') || 0;
+        let obstacleTimer = 0;
+        let animationFrame = 0;
+        let gameStarted = false;
+        let showCollisionBox = false;
+
+        const GROUND_Y = HEIGHT - 60;
+        const GROUND_HEIGHT = 20;
+
+        const musicList = [
+            document.getElementById('bgMusic1'),
+            document.getElementById('bgMusic2'),
+            document.getElementById('bgMusic3')
+        ];
+        let currentMusicIndex = 0;
+        let musicPlaying = false;
+        let musicWasPlaying = false;
+        let volume = 0.5;
+
+        musicList.forEach(audio => {
+            audio.volume = volume;
+            audio.addEventListener('ended', () => {
+                if(musicPlaying){
+                    currentMusicIndex = (currentMusicIndex + 1) % musicList.length;
+                    playCurrentMusic();
+                }
+            });
+        });
+
+        const musicToggle = document.getElementById('musicToggle');
+
+        function playCurrentMusic(){
+            musicList.forEach(a => a.pause());
+            musicList[currentMusicIndex].play().catch(e => console.log("音乐播放拦截"));
+        }
+
+        function toggleMusic() {
+            if (musicPlaying) {
+                musicList[currentMusicIndex].pause();
+                musicToggle.textContent = '🔇';
+                musicPlaying = false;
+            } else {
+                playCurrentMusic();
+                musicToggle.textContent = '🔊';
+                musicPlaying = true;
+            }
+        }
+
+        musicToggle.addEventListener('click', toggleMusic);
+
+        let weatherType = 0;
+        const SWITCH_SCORE = 80;
+        let lastWeatherScore = 0;
+        let rainDrops = [];
+        let fogParticles = [];
+
+        class RainDrop {
+            constructor() {
+                this.x = Math.random() * WIDTH;
+                this.y = Math.random() * -HEIGHT;
+                this.speed = Math.random() * 5 + 8;
+                this.len = Math.random() * 6 + 4;
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > HEIGHT) {
+                    this.y = -10;
+                    this.x = Math.random() * WIDTH;
+                }
+            }
+            draw() {
+                ctx.strokeStyle = 'rgba(100,120,160,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x, this.y + this.len);
+                ctx.stroke();
+            }
+        }
+
+        class Fog {
+            constructor() {
+                this.x = Math.random() * WIDTH;
+                this.y = Math.random() * HEIGHT;
+                this.radius = Math.random() * 30 + 20;
+                this.speedX = (Math.random() - 0.5) * 1;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.alpha = Math.random() * 0.3 + 0.7;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < -50) this.x = WIDTH + 50;
+                if (this.x > WIDTH + 50) this.x = -50;
+                if (this.y < -30) this.y = HEIGHT + 30;
+                if (this.y > HEIGHT + 30) this.y = -30;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(200, 200, 200, ${this.alpha})`;
+                ctx.fill();
+            }
+        }
+
+        function updateWeather() {
+            if (score - lastWeatherScore >= SWITCH_SCORE) {
+                weatherType = (weatherType + 1) % 3;
+                lastWeatherScore = score;
+                rainDrops = [];
+                fogParticles = [];
+                if (weatherType === 1) {
+                    for (let i = 0; i < 60; i++) rainDrops.push(new RainDrop());
+                } else if (weatherType === 2) {
+                    for (let i = 0; i < 60; i++) fogParticles.push(new Fog());
+                }
+            }
+        }
+
+        function drawWeather() {
+            if (weatherType === 1) {
+                rainDrops.forEach(d => { d.update(); d.draw(); });
+            } else if (weatherType === 2) {
+                fogParticles.forEach(f => { f.update(); f.draw(); });
+            }
+        }
+
+        function getWeatherText() {
+            switch(weatherType) {
+                case 0: return '☀️ 晴天';
+                case 1: return '🌧️ 下雨';
+                case 2: return '🌫️ 迷雾';
+                default: return '☀️ 晴天';
+            }
+        }
+
+        let particles = [];
+        class Particle {
+            constructor(x, y, color, isExplosion = false) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6;
+                this.life = 1;
+                this.decay = 0.02;
+                this.color = color;
+                this.size = Math.random() * 3 + 2;
+                this.isExplosion = isExplosion;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.isExplosion) this.vy += 0.1;
+                this.life -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        let gameSpeed = 8;
+        const BASE_SPEED = 8;
+        const MAX_SPEED = 16;
+        const SPEED_INCREMENT = 0.25;
+
+        const bgImage = new Image();
+        bgImage.src = 'bg.png';
+        let bgX1 = 0;
+        let bgX2 = WIDTH;
+        const BG_SCROLL_SPEED = 2;
+
+        const dogImage = new Image();
+        dogImage.src = 'dog.png';
+
+        let imagesLoaded = 0;
+        function checkAllImagesLoaded() {
+            imagesLoaded++;
+            if (imagesLoaded === 2) {
+                gameStarted = true;
+                gameLoop();
+            }
+        }
+        bgImage.onload = checkAllImagesLoaded;
+        dogImage.onload = checkAllImagesLoaded;
+        bgImage.onerror = function(){ checkAllImagesLoaded(); };
+        dogImage.onerror = function(){ alert('小狗图片加载失败！请确保dog.png和文件同目录'); };
+
+        // 小鸡毛
+        class Dog {
+            constructor() {
+                this.x = 100;
+                this.y = GROUND_Y - 70;
+                this.width = 70;
+                this.height = 70;
+                this.vel_y = 0;
+                this.jump_power = -14;
+                this.gravity = 0.75;
+                this.on_ground = true;
+                this.collisionScale = 0.2;
+                this.jumpCount = 0;
+                this.maxJumps = 2;
+                this.isCrouching = false;
+                this.crouchHeight = 35;
+                this.normalHeight = 70;
+                this.crouchY = GROUND_Y - 35;
+            }
+            jump() {
+                if (this.jumpCount < this.maxJumps && !this.isCrouching) {
+                    this.vel_y = this.jump_power;
+                    this.jumpCount++;
+                    this.on_ground = false;
+                }
+            }
+            crouch() {
+                if (this.on_ground) {
+                    this.isCrouching = true;
+                    this.height = this.crouchHeight;
+                    this.y = this.crouchY;
+                }
+            }
+            standUp() {
+                if (this.isCrouching) {
+                    this.isCrouching = false;
+                    this.height = this.normalHeight;
+                    this.y = GROUND_Y - 70;
+                }
+            }
+            update() {
+                let wasInAir = !this.on_ground;
+                this.vel_y += this.gravity;
+                this.y += this.vel_y;
+                if (this.y >= GROUND_Y - 70 && !this.isCrouching) {
+                    this.y = GROUND_Y - 70;
+                    this.vel_y = 0;
+                    this.on_ground = true;
+                    this.jumpCount = 0;
+                    if (wasInAir) {
+                        for (let i = 0; i < 6; i++) {
+                            particles.push(new Particle(this.x + this.width/2, this.y + this.height, '#999'));
+                        }
+                    }
+                }
+            }
+            draw() {
+                if (this.isCrouching) {
+                    const sx = 0, sy = dogImage.naturalHeight / 2;
+                    const sw = dogImage.naturalWidth, sh = dogImage.naturalHeight / 2;
+                    ctx.drawImage(dogImage, sx, sy, sw, sh, this.x, this.y, this.width, this.crouchHeight);
+                } else {
+                    ctx.drawImage(dogImage, this.x, this.y, this.width, this.height);
+                }
+                if (showCollisionBox) {
+                    const rect = this.getRect();
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+                }
+            }
+            getRect() {
+                const cw = this.width * this.collisionScale;
+                const ch = this.height * this.collisionScale;
+                const ox = (this.width - cw) / 2;
+                const oy = (this.height - ch) / 2;
+                return {x: this.x + ox, y: this.y + oy, width: cw, height: ch};
+            }
+        }
+
+        // 仙人掌
+        class Cactus {
+            constructor(xOffset = 0) {
+                this.x = WIDTH + xOffset;
+                this.height = Math.floor(Math.random() * 20) + 40;
+                this.y = GROUND_Y - this.height;
+                this.width = 30;
+                this.speed = gameSpeed;
+                this.type = 'ground';
+            }
+            update() { this.x -= this.speed; }
+            draw() {
+                ctx.fillStyle = '#2E8B57';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                const mw = this.width * 0.6;
+                const mx = this.x + (this.width - mw) / 2;
+                ctx.fillRect(mx, this.y, mw, this.height);
+                ctx.strokeRect(mx, this.y, mw, this.height);
+                const bw = mw * 0.8, bh = this.height * 0.3;
+                ctx.fillRect(mx - bw*0.5, this.y + this.height*0.2, bw, bh);
+                ctx.strokeRect(mx - bw*0.5, this.y + this.height*0.2, bw, bh);
+                ctx.fillRect(mx + mw - bw*0.5, this.y + this.height*0.4, bw, bh);
+                ctx.strokeRect(mx + mw - bw*0.5, this.y + this.height*0.4, bw, bh);
+                ctx.fillStyle = '#3CB371';
+                ctx.beginPath();
+                for (let i = 0; i < 5; i++) {
+                    let sy = this.y + (this.height / 5) * i;
+                    ctx.moveTo(mx, sy); ctx.lineTo(mx - 5, sy - 3); ctx.lineTo(mx - 5, sy + 3); ctx.closePath();
+                    ctx.moveTo(mx + mw, sy); ctx.lineTo(mx + mw + 5, sy - 3); ctx.lineTo(mx + mw + 5, sy + 3); ctx.closePath();
+                }
+                ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath(); ctx.arc(mx + mw/2, this.y + this.height/2, 3, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                if (showCollisionBox) {
+                    let r = this.getRect();
+                    ctx.strokeStyle = 'blue'; ctx.strokeRect(r.x, r.y, r.width, r.height);
+                }
+            }
+            getRect() { return {x: this.x - 5, y: this.y, width: this.width + 10, height: this.height}; }
+        }
+
+        // 巨型仙人掌
+        class GiantCactus {
+            constructor() {
+                this.width = 50;
+                this.height = Math.floor(Math.random() * 40) + 100;
+                this.x = WIDTH;
+                this.y = GROUND_Y - this.height;
+                this.speed = gameSpeed;
+                this.type = 'ground';
+            }
+            update() { this.x -= this.speed; }
+            draw() {
+                ctx.fillStyle = '#1a9150';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                const sw = this.width * 0.65;
+                const sx = this.x + (this.width - sw) / 2;
+                ctx.fillRect(sx, this.y, sw, this.height);
+                ctx.strokeRect(sx, this.y, sw, this.height);
+                const aw = sw * 0.9, ah = this.height * 0.35;
+                ctx.fillRect(sx - aw*0.5, this.y + this.height*0.25, aw, ah);
+                ctx.fillRect(sx - aw*0.5, this.y + this.height*0.6, aw, ah);
+                ctx.strokeRect(sx - aw*0.5, this.y + this.height*0.25, aw, ah);
+                ctx.strokeRect(sx - aw*0.5, this.y + this.height*0.6, aw, ah);
+                if (showCollisionBox) {
+                    let r = this.getRect();
+                    ctx.strokeStyle = '#ff8800'; ctx.strokeRect(r.x, r.y, r.width, r.height);
+                }
+            }
+            getRect() { return {x: this.x - 8, y: this.y, width: this.width + 16, height: this.height}; }
+        }
+
+        // 鸟
+        class Bird {
+            constructor() {
+                this.x = WIDTH;
+                this.y = GROUND_Y - Math.floor(Math.random() * 60) - 90;
+                this.width = 50;
+                this.height = 35;
+                this.speed = gameSpeed;
+                this.type = 'air';
+            }
+            update() { this.x -= this.speed; }
+            draw() {
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+                ctx.fillStyle = '#8B4513';
+                ctx.beginPath(); ctx.ellipse(this.x + 20, this.y + 17, 20, 15, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                let wa = Math.sin(animationFrame * 0.5) * 0.5;
+                ctx.save();
+                ctx.translate(this.x + 20, this.y + 17);
+                ctx.rotate(-wa);
+                ctx.fillStyle = '#A0522D';
+                ctx.beginPath(); ctx.moveTo(-5,0); ctx.lineTo(-25,-10); ctx.lineTo(-25,10); ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.resetTransform();
+                ctx.rotate(wa);
+                ctx.beginPath(); ctx.moveTo(5,0); ctx.lineTo(25,-10); ctx.lineTo(25,10); ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.restore();
+                ctx.fillStyle = '#8B4513';
+                ctx.beginPath(); ctx.arc(this.x + 35, this.y + 12, 8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath(); ctx.arc(this.x + 38, this.y + 10, 3, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(this.x + 39, this.y + 10, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath(); ctx.moveTo(this.x + 42, this.y + 12); ctx.lineTo(this.x + 48, this.y + 10); ctx.lineTo(this.x + 48, this.y + 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#A0522D';
+                ctx.beginPath(); ctx.moveTo(this.x - 5, this.y + 17); ctx.lineTo(this.x - 10, this.y + 12); ctx.lineTo(this.x - 10, this.y + 22); ctx.closePath(); ctx.fill(); ctx.stroke();
+                if (showCollisionBox) {
+                    let r = this.getRect();
+                    ctx.strokeStyle = 'green'; ctx.strokeRect(r.x, r.y, r.width, r.height);
+                }
+            }
+            getRect() { return {x: this.x - 10, y: this.y - 10, width: this.width + 20, height: this.height + 20}; }
+        }
+
+        // 地面坑洞
+        class GroundHole {
+            constructor() {
+                this.x = WIDTH;
+                this.width = Math.floor(Math.random() * 130) + 20;
+                this.depth = Math.floor(Math.random() * 40) + 10;
+                this.y = GROUND_Y;
+                this.speed = gameSpeed;
+                this.type = 'ground';
+            }
+            update() { this.x -= this.speed; }
+            draw() {
+                ctx.fillStyle = '#3a2a1a';
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x, this.y + this.depth);
+                ctx.quadraticCurveTo(this.x + this.width/2, this.y + this.depth + 10, this.x + this.width, this.y + this.depth);
+                ctx.lineTo(this.x + this.width, this.y);
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y + 5);
+                ctx.lineTo(this.x, this.y + this.depth);
+                ctx.quadraticCurveTo(this.x + this.width/2, this.y + this.depth + 5, this.x + this.width, this.y + this.depth);
+                ctx.lineTo(this.x + this.width, this.y + 5);
+                ctx.closePath(); ctx.fill();
+                if (showCollisionBox) {
+                    let r = this.getRect();
+                    ctx.strokeStyle = 'purple'; ctx.strokeRect(r.x, r.y, r.width, r.height);
+                }
+            }
+            getRect() { return {x: this.x, y: this.y, width: this.width, height: this.depth}; }
+        }
+
+        // 地面
+        class Ground {
+            constructor() {
+                this.x1 = 0;
+                this.x2 = WIDTH;
+                this.y = GROUND_Y;
+                this.speed = gameSpeed;
+            }
+            update() {
+                this.speed = gameSpeed;
+                this.x1 -= this.speed;
+                this.x2 -= this.speed;
+                if (this.x1 + WIDTH < 0) this.x1 = this.x2 + WIDTH;
+                if (this.x2 + WIDTH < 0) this.x2 = this.x1 + WIDTH;
+            }
+            draw() {
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+                ctx.strokeRect(this.x1, this.y, WIDTH, GROUND_HEIGHT);
+                ctx.strokeRect(this.x2, this.y, WIDTH, GROUND_HEIGHT);
+            }
+        }
+
+        // 初始化游戏
+        let dog, ground, obstacles;
+        function resetGame() {
+            dog = new Dog();
+            ground = new Ground();
+            obstacles = [];
+            particles = [];
+            score = 0;
+            gameOver = false;
+            isPaused = false;
+            obstacleTimer = 0;
+            gameSpeed = BASE_SPEED;
+            weatherType = 0;
+            rainDrops = [];
+            fogParticles = [];
+            lastWeatherScore = 0;
+            bgX1 = 0;
+            bgX2 = WIDTH;
+
+            // 游戏重启恢复音乐
+            if (musicWasPlaying) {
+                playCurrentMusic();
+                musicPlaying = true;
+                musicToggle.textContent = '🔊';
+            }
+        }
+        resetGame();
+
+        // 碰撞检测
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        // 主循环
+        function gameLoop() {
+            if (bgImage.complete && bgImage.naturalHeight !== 0) {
+                bgX1 -= BG_SCROLL_SPEED;
+                bgX2 -= BG_SCROLL_SPEED;
+                if (bgX1 + WIDTH < 0) bgX1 = bgX2 + WIDTH;
+                if (bgX2 + WIDTH < 0) bgX2 = bgX1 + WIDTH;
+                ctx.drawImage(bgImage, bgX1, 0, WIDTH, HEIGHT);
+                ctx.drawImage(bgImage, bgX2, 0, WIDTH, HEIGHT);
+            } else {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            }
+
+            if (!gameOver && !isPaused && gameStarted) {
+                animationFrame++;
+                updateWeather();
+                dog.update();
+                ground.update();
+
+                if (score > 0 && score % 10 === 0) {
+                    let targetSpeed = BASE_SPEED + Math.floor(score / 10) * SPEED_INCREMENT;
+                    gameSpeed = Math.min(targetSpeed, MAX_SPEED);
+                }
+
+                const minInterval = Math.max(30, 45 - (gameSpeed - BASE_SPEED) * 2);
+                const maxInterval = Math.max(50, 90 - (gameSpeed - BASE_SPEED) * 3);
+                obstacleTimer++;
+                if (obstacleTimer >= Math.floor(Math.random() * (maxInterval - minInterval)) + minInterval) {
+                    if (score >= 200 && Math.random() < 0.2) {
+                        obstacles.push(new GroundHole());
+                    } else if (score >= 150 && Math.random() < 0.2) {
+                        obstacles.push(new GiantCactus());
+                    } else if (score >= 50 && Math.random() < 0.25) {
+                        let cnt = Math.random() > 0.5 ? 2 : 3;
+                        for (let i = 0; i < cnt; i++) obstacles.push(new Cactus(i * 35));
+                    } else if (Math.random() < 0.3 && score > 20) {
+                        obstacles.push(new Cactus());
+                        obstacles.push(new Bird());
+                    } else {
+                        if (Math.random() < 0.6) obstacles.push(new Cactus());
+                        else obstacles.push(new Bird());
+                    }
+                    obstacleTimer = 0;
+                }
+
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    obstacles[i].speed = gameSpeed;
+                    obstacles[i].update();
+                    if (obstacles[i].x + obstacles[i].width < 0) {
+                        obstacles.splice(i, 1);
+                        score++;
+                    }
+                }
+
+                const dogRect = dog.getRect();
+                for (let obs of obstacles) {
+                    if (checkCollision(dogRect, obs.getRect())) {
+                        gameOver = true;
+                        for (let i = 0; i < 30; i++) {
+                            particles.push(new Particle(dog.x + dog.width/2, dog.y + dog.height/2, '#ff4444', true));
+                        }
+                        if(score > highScore){
+                            highScore = score;
+                            localStorage.setItem('chickenHighScore', highScore);
+                        }
+                        musicWasPlaying = musicPlaying;
+                        if (musicPlaying) {
+                            musicList[currentMusicIndex].pause();
+                            musicPlaying = false;
+                            musicToggle.textContent = '🔇';
+                        }
+                        break;
+                    }
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+
+            ground.draw();
+            if (gameStarted) dog.draw();
+            else {
+                ctx.fillStyle = '#000';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('正在加载游戏资源...', WIDTH / 2, HEIGHT / 2);
+                ctx.textAlign = 'left';
+            }
+            obstacles.forEach(obs => obs.draw());
+            particles.forEach(p => p.draw());
+            drawWeather();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fillRect(10, 10, 200, 130);
+            ctx.fillStyle = '#000';
+            ctx.font = '22px Arial';
+            ctx.fillText(`分数: ${score}`, 20, 40);
+            ctx.fillText(`最高分: ${highScore}`, 20, 70);
+            ctx.fillText(`速度: ${gameSpeed.toFixed(1)}`, 20, 100);
+            ctx.fillText(`天气: ${getWeatherText()}`, 20, 130);
+
+            if (isPaused) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0,0,WIDTH,HEIGHT);
+                ctx.fillStyle = '#fff';
+                ctx.font = '60px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('已暂停', WIDTH/2, HEIGHT/2);
+                ctx.font = '24px';
+                ctx.fillText('按 P 继续游戏', WIDTH/2, HEIGHT/2 + 50);
+                ctx.textAlign = 'left';
+            }
+
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+                ctx.fillStyle = '#000';
+                ctx.font = '50px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('游戏结束！', WIDTH / 2, HEIGHT / 2 - 50);
+                ctx.font = '28px Arial';
+                ctx.fillText(`最终分数: ${score}`, WIDTH / 2, HEIGHT / 2);
+                ctx.fillText(`历史最高分: ${highScore}`, WIDTH / 2, HEIGHT / 2 + 35);
+                ctx.font = '24px Arial';
+                ctx.fillText('点击屏幕或按R键重新开始', WIDTH / 2, HEIGHT / 2 + 75);
+                ctx.textAlign = 'left';
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 键盘事件
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                if (!gameOver && !isPaused && gameStarted) {
+                    dog.jump();
+                    if (!musicPlaying && !gameOver) toggleMusic();
+                }
+            }
+            if (e.code === 'ArrowDown') {
+                e.preventDefault();
+                if (!gameOver && !isPaused && gameStarted) dog.crouch();
+            }
+            if (e.code === 'KeyR' && gameOver) resetGame();
+            if(e.code === 'KeyP' && !gameOver && gameStarted) isPaused = !isPaused;
+            if (e.code === 'KeyD') showCollisionBox = !showCollisionBox;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowDown') {
+                if (!gameOver && !isPaused && gameStarted) dog.standUp();
+            }
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (gameOver) resetGame();
+        });
+
+        const btnJump = document.getElementById('btnJump');
+        const btnCrouch = document.getElementById('btnCrouch');
+
+        // 优化触摸事件，防止延迟
+        btnJump.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameOver && !isPaused && gameStarted) {
+                dog.jump();
+                if (!musicPlaying && !gameOver) toggleMusic();
+            }
+        });
+
+        btnJump.addEventListener('click', () => {
+            if (!gameOver && !isPaused && gameStarted) {
+                dog.jump();
+                if (!musicPlaying && !gameOver) toggleMusic();
+            }
+        });
+
+        function startCrouch(e){
+            e.preventDefault();
+            if (!gameOver && !isPaused && gameStarted) {
+                dog.crouch();
+            }
+        }
+        function endCrouch(){
+            if (!gameOver && !isPaused && gameStarted) {
+                dog.standUp();
+            }
+        }
+
+        btnCrouch.addEventListener('mousedown', startCrouch);
+        btnCrouch.addEventListener('touchstart', startCrouch);
+        btnCrouch.addEventListener('mouseup', endCrouch);
+        btnCrouch.addEventListener('mouseleave', endCrouch);
+        btnCrouch.addEventListener('touchend', endCrouch);
+        btnCrouch.addEventListener('touchcancel', endCrouch);
+    </script>
+</body>
+</html>
