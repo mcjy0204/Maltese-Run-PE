@@ -23,7 +23,7 @@
             overflow-x: hidden;
             overflow-y: auto;
             gap: 15px;
-            padding: 15px 0;
+            padding: 15px 0 40px 0; /* 底部增加内边距，防止防沉迷文字遮挡内容 */
         }
         
         .game-container {
@@ -148,13 +148,30 @@
 
         .corner-sign {
             position: fixed;
-            bottom: 5px;
+            bottom: 25px; /* 调整位置，避免与防沉迷文字重叠 */
             right: 8px;
             color: rgba(128, 128, 128, 0.4);
             font-size: 12px;
             pointer-events: none;
             user-select: none;
             z-index: 5;
+        }
+
+        .anti-addiction-text {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #ffffff;
+            font-size: 12px;
+            line-height: 1.5;
+            pointer-events: none;
+            user-select: none;
+            z-index: 10;
+            text-shadow: 0 0 2px rgba(0,0,0,0.5);
+            background-color: rgba(0,0,0,0.2); /* 增加半透明背景，提高文字可读性 */
+            padding: 3px 0;
         }
 
         /* 桌面端适配 */
@@ -164,7 +181,7 @@
                 justify-content: center;
                 overflow: hidden;
                 gap: 20px;
-                padding: 0;
+                padding: 0 0 25px 0; /* 桌面端底部内边距 */
             }
             
             .game-container {
@@ -211,9 +228,15 @@
             }
             
             .corner-sign {
-                bottom: 8px;
+                bottom: 28px;
                 right: 12px;
                 font-size: 13px;
+            }
+
+            .anti-addiction-text {
+                font-size: 12px;
+                background-color: transparent; /* 桌面端去掉背景 */
+                padding: 0;
             }
         }
     </style>
@@ -263,7 +286,13 @@
         </ul>
     </div>
 
-     <div class="corner-sign">墨尘寂夜</div>
+    <div class="corner-sign">墨尘寂夜</div>
+
+    <!-- 重新添加的防沉迷文字 -->
+    <div class="anti-addiction-text">
+        <div>抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。</div>
+        <div>适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。</div>
+    </div>
 
     <audio id="bgMusic1">
         <source src="bgm1.mp3" type="audio/mpeg">
